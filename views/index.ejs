@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <link rel="stylesheet/less" type="text/css" href="/stylesheets/style.less" />
+    <link src="stylesheets/bootstrap.css"> 
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"> 
+    <script src="/stylesheets/less-1.6.3.js" type="text/javascript"></script>
+
+  </head>
+  <body>
+    <div id='container'>
+      <div id='chatbox'></div>
+      <div id='users_list'></div>
+        <input type="text" id="inputbox" />
+    </div>
+  </body>
+  </body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+  <script>
+    $(document).ready(function(){
+      io = io.connect();
+
+      // GET NAME & EMIT NAME TO SERVER
+      var name = prompt("Welcome new user, please enter your chat-name:");
+      io.emit('connect_me', {name: name});
+      $("#inputbox").keypress(function(e){
+        if(e.which == 13){
+          var message =  $(this).val();
+          io.emit('submitted_chat', { id: my_id, my_message: message, name: my_name });
+          $("#inputbox").val("");
+        }
+      });
+
+      io.on('broadcasted_message', function(req){
+        $('<div class="textbox"><p><label>'+req.posting_name+': </label>'+req.posting_message+'</p></div>').appendTo("#chatbox");
+        $("#chatbox")[0].scrollTop = $("#chatbox")[0].scrollHeight*2 // Scrolling the TextBox down.
+      });
+
+      io.on('disconnect_user', function(req){
+        $("#users_list #"+req.disconnect_this_id).remove();
+      });
+
+      io.on('connected', function(req){
+        my_id = req.id;
+        my_name = req.name;
+        $('#users_list').append("<input id="+req.id+" type='text' value='"+req.name+"' readonly>");
+        for(var i = 0; i < req.users.length; i++)
+        {
+          if( req.users[i].id != req.id)
+            $('#users_list').append("<input id="+req.users[i].id+" type='text' value='"+req.users[i].name+"' readonly>");
+        }
+      });
+
+
+      io.on('connect_new_user', function(req){
+        console.log('connect_new_user in CLIENT');
+         $('#users_list').append("<input id="+req.id+" type='text' value='"+req.name+"' readonly>");
+      });
+
+      $("#chatbox").animate({ scrollTop: $(document).height() }, "slow");
+    });    
+  </script>
+</html>
